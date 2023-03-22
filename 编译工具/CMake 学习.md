@@ -73,7 +73,8 @@ add_executable(hello ${SRC_LIST})
 2. 进⼊ build 目录，运⾏ `cmake ..`，表示上⼀级⽬录，⽣产的⽂件都在 `build` ⽬录下了。
 
 3. 在 `build` ⽬录下，运⾏ make 来构建⼯程。注意外部构建的两个变量，`<project_name>_SOURCE_DIR` 还是⼯程路径，`<project_name>_BINARY_DIR` 则是编译路径。
-   &emsp;
+
+&emsp;
 
 ## 工程化构建
 
