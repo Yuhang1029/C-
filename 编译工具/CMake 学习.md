@@ -30,14 +30,14 @@ CMake 是一个**跨平台**的编译 (Build) 工具，可以用简单的语句�
 
 &emsp;
 
-## 语法介绍
+## 基础语法介绍
 
 在当前文件夹下编写一个 `CMakeLists.txt`，然后输入 `cmake .` 运行。
 
 ```cmake
 cmake_minimum_required(VERSION 3.24)
 
-project(hello)
+project(hello VERSION 1.0)
 
 set(SRC_LIST main.cpp)
 set(CMAKE_CXX_STANDARD 17)
@@ -48,7 +48,7 @@ message(STATUS "This is SOURCE dir " ${hello_SOURCE_DIR})
 add_executable(hello ${SRC_LIST})
 ```
 
-* `project` 关键词：用来指定工程的名字和支持的语言，默认支持所有语言。例如 `project(hello CXX)` 就既指定了工程名同时代表支持的语言是 C++。该指定形式隐式的定义了两个变量：`<project_name>_BINARY_DIR` 和 `<project_name>_SOURCE_DIR`，在本例中都代表当前目录。
+* `project` 关键词：用来指定工程的名字和支持的语言，默认支持所有语言。例如 `project(hello CXX)` 就既指定了工程名同时代表支持的语言是 C++。该指定形式隐式的定义了两个变量：`<project_name>_BINARY_DIR` 和 `<project_name>_SOURCE_DIR`，在本例中都代表当前目录。如果还像本例中定义了版本类型，同样会隐式定义两个变量：`<project_name>_VERSION_MAJOR` 和 `<project_name>_VERSION_MINOR`。
 
 * `set` 关键词：用来显式的指定变量。`set(SRC_LIST main.cpp)` 就代表 `SRC_LIST` 中包含 `main.cpp`，也可以是 `set(SRC_LIST main.cpp t1.cpp t2.cpp)`
 
@@ -78,6 +78,8 @@ add_executable(hello ${SRC_LIST})
 
 ## 工程化构建
 
+在实际的项目开发中，我们并不是把所有的源文件都写在同一个目录下，而是分别包含在多个子目录下。
+
 ```bash
 MacBook-Air temp % tree
 .
@@ -103,3 +105,57 @@ add_executable(hello main.cpp)
 ```
 
 这里用到了 `add_subdirectory(source_dir [binary_dir] [EXCLUDE_FROM_ALL])` ，这个指令⽤于向当前⼯程添加存放源⽂件的⼦⽬录，并可以指定中间⼆进制和⽬标⼆进制存放的位置。`EXCLUDE_FROM_ALL` 函数是将写的⽬录从编译中排除，如程序中的 example。
+
+&emsp;
+
+## 使用库
+
+```bash
+MacBook-Air Example % tree
+.
+├── CMakeLists.txt
+├── MathFunctions
+│   ├── CMakeLists.txt
+│   ├── MathFunctions.h
+│   └── mysqrt.cxx
+├── TutorialConfig.h.in
+└── tutorial.cxx
+```
+
+根据上述文件结构，首先我们需要在 `MathFunctions/CMakeLists.txt` 中声明这个源文件会被当作一个库来使用。
+
+```cmake
+add_library(MathFunctions mysqrt.cxx)
+```
+
+在外层的 `CMakeLists.txt` 中，还需要如下声明：
+
+```cmake
+cmake_minimum_required(VERSION 3.10)
+
+project(Tutorial VERSION 1.0)
+
+# specify the C++ standard
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+# Add MathFunctions to this project
+add_subdirectory(MathFunctions)
+
+# add the executable
+add_executable(Tutorial tutorial.cxx)
+
+# Use target_link_libraries to link the library to our executable
+target_link_libraries(Tutorial PUBLIC MathFunctions)
+
+# Add MathFunctions to Tutorial's target_include_directories()
+# ${PROJECT_SOURCE_DIR} is a path to the project source.
+target_include_directories(Tutorial PUBLIC
+                          "${PROJECT_BINARY_DIR}"
+                          "${PROJECT_SOURCE_DIR}/MathFunctions"
+                          )
+```
+
+`target_link_libraries()` 就是将之前打包的库，链接到生成的目标上，不然会出现光声明，没定义的错误。
+
+`target_include_directories()` 用来将子目录中的头文件包含到目标中。
