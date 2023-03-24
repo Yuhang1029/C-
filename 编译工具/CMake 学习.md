@@ -45,6 +45,7 @@ set(CMAKE_CXX_STANDARD 17)
 message(STATUS "This is BINARY dir " ${hello_BINARY_DIR})
 message(STATUS "This is SOURCE dir " ${hello_SOURCE_DIR})
 
+add_compile_options(-Wall -std=c++11 -o2)
 add_executable(hello ${SRC_LIST})
 ```
 
@@ -60,7 +61,46 @@ add_executable(hello ${SRC_LIST})
   
   * `FATAL_ERROR` ⽴即终⽌所有 cmake 过程。
 
-* `add_executable` 关键词：⽣成可执⾏⽂件。`add_executable(hello ${SRC_LIST})` 表示⽣成的可执⾏⽂件名是 hello，源⽂件读取变量 `SRC_LIST` 中的内容。注意⼯程名的 hello 和⽣成的可执⾏⽂件 hello 是没有任何关系的。
+* `add_executable` 关键词：⽣成可执⾏⽂件。`add_executable(hello ${SRC_LIST})` 表示⽣成的可执⾏⽂件名是 hello，源⽂件读取变量 `SRC_LIST` 中的内容。注意⼯程名的 hello 和⽣成的可执⾏⽂件 hello 是没有任何关系的。它的语法格式为 `add_executable (exe_name source1 source2 ... sourceN)`
+
+* `add_compile_options` 关键词用来添加编译参数。
+
+&emsp;
+
+## CMake 常见变量
+
+* `CMAKE_C_FLAGS` gcc 编译选项
+
+* `CMAKE_CXX_FLAGS` g++ 编译选项
+  
+  ```cmake
+  # 在 CMAKE_CXX_FLAGS 编译选项后追加 -std=c++11
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+  ```
+
+* `CMAKE_BUILD_TYPE` 编译类型(Debug, Release)
+  
+  ```cmake
+  # 设定编译类型为 debug，调试时需要选择 debug
+  set(CMAKE_BUILD_TYPE Debug)
+  # 设定编译类型为 release，发布时需要选择 release
+  set(CMAKE_BUILD_TYPE Release)
+  ```
+
+* `CMAKE_BINARY_DIR`, `PROJECT_BINARY_DIR`, `<project_name>_BINARY_DIR`
+  
+  三个变量指代的内容基本一致，如果是内部构建编译，指的就是工程顶层目录；如果是 外部构建编译，指的就是工程编译发生的目录。
+
+* `CMAKE_SOURCE_DIR`, `PROJECT_SOURCE_DIR`, `<project_name>_SOURCE_DIR`
+  
+  这三个变量指代的内容是一致的，不论采用何种编译方式，都是工程顶层目录。
+
+* `CMAKE_C_COMPILER`：指定 C 编译器
+  `CMAKE_CXX_COMPILER` ：指定 C++ 编译器
+
+* `EXECUTABLE_OUTPUT_PATH` ：可执行文件输出的存放路径。
+
+* `LIBRARY_OUTPUT_PATH`：库文件输出的存放路径。
 
 &emsp;
 
@@ -68,7 +108,7 @@ add_executable(hello ${SRC_LIST})
 
 上述例⼦就是内部构建，他⽣产的临时⽂件特别多，不⽅便清理。外部构建，就会把⽣成的临时⽂件放在 `build` ⽬录下，不会对源⽂件有任何影响，强烈使⽤外部构建⽅式。
 
-1. 建⽴⼀个 `build` ⽬录，可以在任何地⽅，建议在当前⽬录下。
+1. 建⽴⼀个 `build` ⽬录，可以在任何地⽅，建议在当前⽬录下，`mkdir build`。
 
 2. 进⼊ build 目录，运⾏ `cmake ..`，表示上⼀级⽬录，⽣产的⽂件都在 `build` ⽬录下了。
 
@@ -104,7 +144,7 @@ add_subdirectory(src bin)
 add_executable(hello main.cpp)
 ```
 
-这里用到了 `add_subdirectory(source_dir [binary_dir] [EXCLUDE_FROM_ALL])` ，这个指令⽤于向当前⼯程添加存放源⽂件的⼦⽬录，并可以指定中间⼆进制和⽬标⼆进制存放的位置。`EXCLUDE_FROM_ALL` 函数是将写的⽬录从编译中排除，如程序中的 example。
+这里用到了 `add_subdirectory(source_dir [binary_dir] [EXCLUDE_FROM_ALL])` ，这个指令⽤于向当前⼯程添加存放源⽂件的⼦⽬录，并可以指定中间⼆进制和⽬标⼆进制存放的位置。注意 src 目录下必须要有一个 `CMakeLists.txt` 文件。`EXCLUDE_FROM_ALL` 函数是将写的⽬录从编译中排除，如程序中的 example。
 
 &emsp;
 
@@ -122,9 +162,10 @@ MacBook-Air Example % tree
 └── tutorial.cxx
 ```
 
-根据上述文件结构，首先我们需要在 `MathFunctions/CMakeLists.txt` 中声明这个源文件会被当作一个库来使用。
+根据上述文件结构，首先我们需要在 `MathFunctions/CMakeLists.txt` 中声明这个源文件会被当作一个库来使用，即生成库文件。除了说明库的名称，这里还可以通过 `SHARED` 或者 `STATIC` 来指明是动态库还是静态库。
 
 ```cmake
+# add_library(lib_name [SHARED|STATIC] source1 source2 ... sourceN)
 add_library(MathFunctions mysqrt.cxx)
 ```
 
@@ -156,6 +197,6 @@ target_include_directories(Tutorial PUBLIC
                           )
 ```
 
-`target_link_libraries()` 就是将之前打包的库，链接到生成的目标上，不然会出现光声明，没定义的错误。
+`target_link_libraries()` 就是将之前打包的库，链接到生成的目标上，不然会出现光声明，没定义的错误，类似于 Makefile 中指定 g++ 编译器的 `-l` 参数。
 
-`target_include_directories()` 用来将子目录中的头文件包含到目标中。
+`target_include_directories()` 用来将子目录中的头文件包含到目标中，类似于 Makefile 中指定 g++ 编译器的 `-I` 参数。
